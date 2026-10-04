@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pill dispenser</title>
+<style>
+  :root {
+    --bg: #eef2f5;
+    --panel: #ffffff;
+    --ink: #16202e;
+    --muted: #5d6b7c;
+    --line: #d5dde5;
+    --c1: #2f6fde; /* slot 1 blue   */
+    --c2: #d8413a; /* slot 2 red    */
+    --c3: #e9b400; /* slot 3 yellow */
+    --c4: #2e9e5b; /* slot 4 green  */
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 17px;
+    line-height: 1.4;
+    -webkit-text-size-adjust: 100%;
+  }
+  main {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 16px calc(120px + env(safe-area-inset-bottom));
+  }
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.01em; margin: 0 0 16px; }
+
+  /* The bottle: four colour-coded partitions */
+  .bottle-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 12px; }
+  .cap { width: 58%; height: 22px; background: var(--ink); border-radius: 8px 8px 3px 3px; }
+  .neck { width: 50%; height: 10px; background: #c4ced8; }
+  .bottle {
+    width: 100%;
+    height: 170px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--panel);
+    border: 3px solid var(--ink);
+    border-radius: 18px 18px 26px 26px;
+    overflow: hidden;
+  }
+  .part {
+    display: flex;
+    flex-wrap: wrap-reverse;
+    align-content: flex-start;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 6px 12px;
+    border-right: 2px solid var(--ink);
+    border-bottom: 10px solid var(--c);
+    background: color-mix(in srgb, var(--c) 9%, white);
+  }
+  .part:last-child { border-right: 0; }
+  .dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 2px dashed var(--c);
+    transition: background-color .2s, transform .2s;
+  }
+  .dot.in { background: var(--c); border-style: solid; }
+  .dot.drop { animation: drop .35s ease-out; }
+  @keyframes drop { from { transform: translateY(-120px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  #status { text-align: center; color: var(--muted); min-height: 1.4em; margin: 0 0 16px; }
+  #status.done { color: var(--ink); font-weight: 700; }
+
+  /* Pill rows */
+  .rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .row {
+    display: grid;
+    grid-template-columns: 40px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    background: var(--panel);
+    border-radius: 16px;
+    padding: 10px;
+    border-left: 8px solid var(--c);
+  }
+  .badge {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: var(--c); color: #fff;
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 18px;
+  }
+  .row[data-slot="3"] .badge { color: var(--ink); }
+  .name {
+    width: 100%; min-width: 0;
+    font: inherit; font-weight: 600; color: var(--ink);
+    border: 0; border-bottom: 2px solid var(--line); border-radius: 0;
+    background: transparent; padding: 8px 2px;
+  }
+  .name::placeholder { color: #98a4b2; font-weight: 500; }
+  .name:focus { outline: none; border-bottom-color: var(--c); }
+  .stepper { display: flex; align-items: center; gap: 2px; }
+  .stepper button {
+    width: 44px; height: 44px; border-radius: 12px;
+    border: 2px solid var(--line); background: var(--bg); color: var(--ink);
+    font: inherit; font-size: 24px; font-weight: 700; line-height: 1;
+    cursor: pointer; touch-action: manipulation;
+  }
+  .stepper button:disabled { opacity: .35; cursor: default; }
+  .count { width: 34px; text-align: center; font-weight: 800; font-size: 22px; font-variant-numeric: tabular-nums; }
+
+  button:focus-visible, summary:focus-visible { outline: 3px solid var(--c1); outline-offset: 2px; }
+
+  /* Bottom action bar */
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--bg) 70%, transparent);
+  }
+  .primary {
+    display: block; width: 100%; max-width: 448px; margin: 0 auto;
+    height: 58px; border: 0; border-radius: 18px;
+    background: var(--ink); color: #fff;
+    font: inherit; font-size: 19px; font-weight: 800;
+    cursor: pointer; touch-action: manipulation;
+  }
+  .primary:disabled { background: #a9b4c0; cursor: default; }
+
+  /* Confirmation sheet */
+  dialog {
+    border: 0; border-radius: 22px; padding: 22px;
+    width: min(92vw, 420px); color: var(--ink); font: inherit;
+  }
+  dialog::backdrop { background: rgba(22, 32, 46, .55); }
+  dialog h2 { margin: 0 0 12px; font-size: 22px; font-weight: 800; }
+  dialog ul { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 8px; }
+  dialog li { display: flex; align-items: center; gap: 10px; }
+  dialog li i { width: 16px; height: 16px; border-radius: 50%; background: var(--c); flex: none; }
+  dialog li b { margin-left: auto; font-variant-numeric: tabular-nums; }
+  .actions { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; }
+  .actions button { height: 52px; border-radius: 14px; font: inherit; font-weight: 800; cursor: pointer; }
+  .cancel { background: var(--bg); border: 2px solid var(--line); color: var(--ink); }
+  .go { background: var(--ink); border: 0; color: #fff; }
+
+  /* For the team: what gets sent to the controller */
+  details { margin-top: 22px; color: var(--muted); font-size: 15px; }
+  summary { cursor: pointer; padding: 6px 0; }
+  pre {
+    background: var(--ink); color: #dfe7ef; padding: 12px; border-radius: 12px;
+    font-size: 13px; overflow-x: auto; margin: 6px 0 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dot.drop { animation: none; }
+    .dot { transition: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Pill dispenser</h1>
+
+  <div class="bottle-wrap" aria-hidden="true">
+    <div class="cap"></div>
+    <div class="neck"></div>
+    <div class="bottle" id="bottle"></div>
+  </div>
+  <p id="status" role="status" aria-live="polite"></p>
+
+  <ul class="rows" id="rows"></ul>
+
+  <details>
+    <summary>Message sent to the controller</summary>
+    <pre id="payload"></pre>
+  </details>
+</main>
+
+<div class="bar">
+  <button class="primary" id="dispense"></button>
+</div>
+
+<dialog id="confirm">
+  <h2>Dispense these pills?</h2>
+  <ul id="summary"></ul>
+  <div class="actions">
+    <button class="cancel" id="cancel">Cancel</button>
+    <button class="go" id="go">Dispense</button>
+  </div>
+</dialog>
+
+<script>
+/* ---------- Settings ---------- */
+const SLOTS = [
+  { slot: 1, colour: "blue",   css: "var(--c1)" },
+  { slot: 2, colour: "red",    css: "var(--c2)" },
+  { slot: 3, colour: "yellow", css: "var(--c3)" },
+  { slot: 4, colour: "green",  css: "var(--c4)" },
+];
+const MAX_PER_PILL = 10;
+const STORAGE_KEY = "pill-dispenser-v0.1";
+
+/* ---------- Controller (simulated) ----------
+   This is the only function that needs to change when the real
+   controller exists. Over WiFi it would become something like:
+
+     const res = await fetch("http://pillbox.local/dispense", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify(payload),
+     });
+
+   payload looks like: { "dispense": [ { "slot": 1, "count": 2 }, ... ] }
+   onProgress is called once per pill so the screen can follow along. */
+async function sendToController(payload, onProgress) {
+  for (const item of payload.dispense) {
+    for (let n = 1; n <= item.count; n++) {
+      await new Promise(r => setTimeout(r, 450));
+      onProgress({ slot: item.slot, dispensed: n });
+    }
+  }
+  return { status: "done" };
+}
+
+/* ---------- Saving names and counts ----------
+   Uses the browser's localStorage. (Inside the Claude preview it
+   uses Claude's own storage instead, since localStorage is blocked there.) */
+const store = {
+  async load() {
+    try {
+      if (window.storage) { const r = await window.storage.get(STORAGE_KEY, false); return r ? JSON.parse(r.value) : null; }
+      return JSON.parse(localStorage.getItem(STORAGE_KEY));
+    } catch { return null; }
+  },
+  async save(data) {
+    try {
+      const text = JSON.stringify(data);
+      if (window.storage) await window.storage.set(STORAGE_KEY, text, false);
+      else localStorage.setItem(STORAGE_KEY, text);
+    } catch { /* keep working in memory */ }
+  },
+};
+
+/* ---------- State ---------- */
+let pills = SLOTS.map(() => ({ name: "", count: 0 }));
+let dispensed = [0, 0, 0, 0];
+let busy = false;
+let finished = false;
+
+const $ = id => document.getElementById(id);
+const label = i => pills[i].name.trim() || `Pill ${i + 1}`;
+const total = () => pills.reduce((sum, p) => sum + p.count, 0);
+const buildPayload = () => ({
+  dispense: pills.map((p, i) => ({ slot: i + 1, count: p.count })).filter(d => d.count > 0),
+});
+
+/* ---------- Building the screen ---------- */
+function buildRows() {
+  $("rows").innerHTML = SLOTS.map((s, i) => `
+    <li class="row" data-slot="${s.slot}" style="--c:${s.css}">
+      <span class="badge" aria-hidden="true">${s.slot}</span>
+      <input class="name" data-i="${i}" maxlength="30" autocomplete="off"
+             placeholder="Pill ${s.slot} name" aria-label="Name of pill ${s.slot} (${s.colour})">
+      <div class="stepper">
+        <button data-i="${i}" data-step="-1" aria-label="One fewer">−</button>
+        <span class="count" id="count${i}">0</span>
+        <button data-i="${i}" data-step="1" aria-label="One more">+</button>
+      </div>
+    </li>`).join("");
+  document.querySelectorAll(".name").forEach((el, i) => { el.value = pills[i].name; });
+}
+
+function render(dropSlot) {
+  // Bottle: dashed dots are planned, solid dots are dispensed
+  $("bottle").innerHTML = SLOTS.map((s, i) => {
+    let dots = "";
+    for (let n = 1; n <= pills[i].count; n++) {
+      const isIn = n <= dispensed[i];
+      const isNew = dropSlot === i && n === dispensed[i];
+      dots += `<span class="dot${isIn ? " in" : ""}${isNew ? " drop" : ""}"></span>`;
+    }
+    return `<div class="part" style="--c:${s.css}">${dots}</div>`;
+  }).join("");
+
+  // Counts and steppers
+  SLOTS.forEach((_, i) => { $("count" + i).textContent = pills[i].count; });
+  document.querySelectorAll(".stepper button").forEach(b => {
+    const c = pills[+b.dataset.i].count;
+    b.disabled = busy || (b.dataset.step === "-1" ? c <= 0 : c >= MAX_PER_PILL);
+  });
+  document.querySelectorAll(".name").forEach(el => { el.disabled = busy; });
+
+  // Main button
+  const t = total();
+  $("dispense").disabled = busy || t === 0;
+  $("dispense").textContent = busy ? "Dispensing…" : t === 0 ? "Dispense" : `Dispense ${t} pill${t === 1 ? "" : "s"}`;
+
+  $("payload").textContent = JSON.stringify(buildPayload(), null, 2);
+
+  if (!busy && !finished) setStatus(t === 0 ? "Set how many of each pill to dispense." : "Ready to dispense.");
+}
+
+function setStatus(text, done) {
+  $("status").textContent = text;
+  $("status").classList.toggle("done", !!done);
+}
+
+function edited() {
+  dispensed = [0, 0, 0, 0];
+  finished = false;
+  store.save(pills);
+}
+
+/* ---------- Events ---------- */
+$("rows").addEventListener("click", e => {
+  const b = e.target.closest("button[data-step]");
+  if (!b || busy) return;
+  const i = +b.dataset.i;
+  pills[i].count = Math.min(MAX_PER_PILL, Math.max(0, pills[i].count + +b.dataset.step));
+  edited();
+  render();
+});
+
+$("rows").addEventListener("input", e => {
+  if (!e.target.classList.contains("name")) return;
+  pills[+e.target.dataset.i].name = e.target.value;
+  store.save(pills);
+});
+
+$("dispense").addEventListener("click", () => {
+  $("summary").innerHTML = pills.map((p, i) => p.count === 0 ? "" :
+    `<li style="--c:${SLOTS[i].css}"><i></i><span></span><b>× ${p.count}</b></li>`).join("");
+  // Names are typed by the user, so set them as text rather than HTML
+  const spans = $("summary").querySelectorAll("span");
+  pills.map((p, i) => i).filter(i => pills[i].count > 0).forEach((i, k) => { spans[k].textContent = label(i); });
+  $("confirm").showModal();
+});
+
+$("cancel").addEventListener("click", () => $("confirm").close());
+
+$("go").addEventListener("click", async () => {
+  $("confirm").close();
+  busy = true;
+  finished = false;
+  dispensed = [0, 0, 0, 0];
+  render();
+  setStatus("Starting…");
+
+  try {
+    await sendToController(buildPayload(), ({ slot, dispensed: n }) => {
+      const i = slot - 1;
+      dispensed[i] = n;
+      render(i);
+      setStatus(`Dispensing ${label(i)}, ${n} of ${pills[i].count}`);
+    });
+    const t = total();
+    finished = true;
+    busy = false;
+    render();
+    setStatus(`Dispensed ${t} pill${t === 1 ? "" : "s"} into the bottle.`, true);
+  } catch (err) {
+    busy = false;
+    finished = true;
+    render();
+    setStatus("Dispensing stopped: the dispenser did not respond. Check it is switched on, then dispense again.", true);
+  }
+});
+
+/* ---------- Start ---------- */
+(async () => {
+  const saved = await store.load();
+  if (Array.isArray(saved) && saved.length === SLOTS.length) {
+    pills = saved.map(p => ({
+      name: String(p.name || "").slice(0, 30),
+      count: Math.min(MAX_PER_PILL, Math.max(0, parseInt(p.count) || 0)),
+    }));
+  }
+  buildRows();
+  render();
+})();
+</script>
+</body>
+</html>
