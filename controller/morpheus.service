@@ -1,0 +1,13 @@
+[Unit]
+Description=Morpheus pill dispenser controller
+After=network.target
+
+[Service]
+# Runs as root so it can listen on port 80 and use the GPIO pins.
+WorkingDirectory=/home/pi/Morpheus/controller
+ExecStart=/usr/bin/python3 /home/pi/Morpheus/controller/server.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

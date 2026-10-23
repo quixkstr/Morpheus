@@ -198,26 +198,59 @@ const SLOTS = [
 const MAX_PER_PILL = 10;
 const STORAGE_KEY = "pill-dispenser-v0.1";
 
-/* ---------- Controller (simulated) ----------
-   This is the only function that needs to change when the real
-   controller exists. Over WiFi it would become something like:
+/* ---------- Controller ----------
+   When the page is served by the Pi (controller/server.py) the
+   controller is at the same address, so CONTROLLER_URL stays "".
+   To point a copy opened elsewhere at the Pi, set it to e.g.
+   "http://10.42.0.1". If no controller answers, the simulation
+   below runs instead so the app still works on its own.
 
-     const res = await fetch("http://pillbox.local/dispense", {
-       method: "POST",
-       headers: { "Content-Type": "application/json" },
-       body: JSON.stringify(payload),
-     });
-
-   payload looks like: { "dispense": [ { "slot": 1, "count": 2 }, ... ] }
+   Messages:
+     POST /dispense  { "dispense": [ { "slot": 1, "count": 2 }, ... ] }
+     GET  /status    { state, dispensed: {"1": n, ...}, current_slot, error }
    onProgress is called once per pill so the screen can follow along. */
+const CONTROLLER_URL = "";
+const POLL_MS = 250;
+
 async function sendToController(payload, onProgress) {
+  let res;
+  try {
+    res = await fetch(CONTROLLER_URL + "/dispense", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // No controller reachable (file opened directly, or Pi not on): simulate.
+    return simulateController(payload, onProgress);
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `Controller refused the request (${res.status})`);
+  }
+
+  // Follow progress until the controller reports done or error.
+  const seen = {};
+  for (;;) {
+    await new Promise(r => setTimeout(r, POLL_MS));
+    const s = await (await fetch(CONTROLLER_URL + "/status")).json();
+    for (const item of payload.dispense) {
+      const n = s.dispensed[String(item.slot)] || 0;
+      if (n !== (seen[item.slot] || 0)) { seen[item.slot] = n; onProgress({ slot: item.slot, dispensed: n }); }
+    }
+    if (s.state === "done") return { status: "done" };
+    if (s.state === "error") throw new Error(s.error || "The dispenser reported a fault.");
+  }
+}
+
+async function simulateController(payload, onProgress) {
   for (const item of payload.dispense) {
     for (let n = 1; n <= item.count; n++) {
       await new Promise(r => setTimeout(r, 450));
       onProgress({ slot: item.slot, dispensed: n });
     }
   }
-  return { status: "done" };
+  return { status: "done", simulated: true };
 }
 
 /* ---------- Saving names and counts ----------
@@ -345,7 +378,7 @@ $("go").addEventListener("click", async () => {
   setStatus("Starting…");
 
   try {
-    await sendToController(buildPayload(), ({ slot, dispensed: n }) => {
+    const result = await sendToController(buildPayload(), ({ slot, dispensed: n }) => {
       const i = slot - 1;
       dispensed[i] = n;
       render(i);
@@ -355,12 +388,12 @@ $("go").addEventListener("click", async () => {
     finished = true;
     busy = false;
     render();
-    setStatus(`Dispensed ${t} pill${t === 1 ? "" : "s"} into the bottle.`, true);
+    setStatus(`Dispensed ${t} pill${t === 1 ? "" : "s"} into the bottle.${result.simulated ? " (Simulated: no dispenser connected.)" : ""}`, true);
   } catch (err) {
     busy = false;
     finished = true;
     render();
-    setStatus("Dispensing stopped: the dispenser did not respond. Check it is switched on, then dispense again.", true);
+    setStatus(`Dispensing stopped: ${err.message || "the dispenser did not respond."} Check the dispenser, then try again.`, true);
   }
 });
 
