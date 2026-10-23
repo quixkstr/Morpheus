@@ -212,18 +212,28 @@ const STORAGE_KEY = "pill-dispenser-v0.1";
 const CONTROLLER_URL = "";
 const POLL_MS = 250;
 
-async function sendToController(payload, onProgress) {
-  let res;
+// True only when our controller answers /status. A different web server
+// (GitHub Pages, say) or no server at all both count as "no controller".
+async function controllerPresent() {
   try {
-    res = await fetch(CONTROLLER_URL + "/dispense", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const res = await fetch(CONTROLLER_URL + "/status", { cache: "no-store" });
+    if (!res.ok) return false;
+    const s = await res.json();
+    return typeof s.state === "string" && typeof s.dispensed === "object";
   } catch {
-    // No controller reachable (file opened directly, or Pi not on): simulate.
+    return false;
+  }
+}
+
+async function sendToController(payload, onProgress) {
+  if (!(await controllerPresent())) {
     return simulateController(payload, onProgress);
   }
+  const res = await fetch(CONTROLLER_URL + "/dispense", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `Controller refused the request (${res.status})`);
