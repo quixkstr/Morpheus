@@ -1,5 +1,7 @@
 # Raspberry Pi 4 setup
 
+Setting up from a Windows PC? Use `pi-setup-windows.md` instead; it covers the Windows side of flashing and connecting.
+
 How to get the Pi broadcasting its own WiFi network and serving the app. After this, a phone joins the `Morpheus` network and opens `http://10.42.0.1`.
 
 Written for the current Raspberry Pi OS (Bookworm or newer), which uses NetworkManager. These steps have not yet been run on our Pi; fix anything that turns out wrong and update this file.
