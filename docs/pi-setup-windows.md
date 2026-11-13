@@ -1,4 +1,4 @@
-# Raspberry Pi 3 setup from a Windows PC
+# Raspberry Pi 4 setup from a Windows PC
 
 The same setup as `pi-setup.md`, written for someone doing it from a Windows 10 or 11 computer. The commands that run on the Pi itself are identical; what differs is how you flash the card and how you connect to the Pi.
 
@@ -6,7 +6,7 @@ These steps have not yet been run on our Pi; fix anything that turns out wrong a
 
 ## What you need
 
-- The Pi 3, its micro-USB power supply (5V, 2.5A), and a microSD card (16 GB or more)
+- The Pi 4, its power supply, and a microSD card (16 GB or more)
 - A microSD card reader (built into many laptops, or a USB one)
 - Your home or phone-hotspot WiFi name and password, so the Pi can get online during setup
 
@@ -15,7 +15,7 @@ These steps have not yet been run on our Pi; fix anything that turns out wrong a
 1. Download Raspberry Pi Imager for Windows from https://www.raspberrypi.com/software/ and install it.
 2. Put the microSD card in the reader and plug it in. If Windows offers to format the card, click Cancel.
 3. Open Raspberry Pi Imager and choose:
-   - **Device:** Raspberry Pi 3
+   - **Device:** Raspberry Pi 4
    - **OS:** Raspberry Pi OS (64-bit)
    - **Storage:** your microSD card (check the size matches so you do not overwrite another drive)
 4. Click Next, then **Edit Settings** when asked about OS customisation:

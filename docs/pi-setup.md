@@ -1,4 +1,4 @@
-# Raspberry Pi 3 setup
+# Raspberry Pi 4 setup
 
 Setting up from a Windows PC? Use `pi-setup-windows.md` instead; it covers the Windows side of flashing and connecting.
 
@@ -8,7 +8,7 @@ Written for the current Raspberry Pi OS (Bookworm or newer), which uses NetworkM
 
 ## 1. Flash and first boot
 
-1. Flash Raspberry Pi OS (64-bit) with Raspberry Pi Imager, choosing Raspberry Pi 3 as the device.
+1. Flash Raspberry Pi OS (64-bit) with Raspberry Pi Imager.
 2. In the Imager's settings: hostname `morpheus`, username `pi`, enable SSH, and enter your home WiFi so you can reach the Pi during setup.
 3. Boot, then connect over SSH (`ssh pi@morpheus.local`) or with a monitor and keyboard.
 
