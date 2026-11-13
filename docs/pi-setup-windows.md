@@ -47,7 +47,7 @@ Everything from here on is typed into that SSH window and runs on the Pi, so it 
 
 ```bash
 sudo apt update && sudo apt full-upgrade -y
-sudo apt install -y git python3-flask python3-gpiozero
+sudo apt install -y git python3-flask python3-serial
 ```
 
 ## 4. Get the code
@@ -120,3 +120,7 @@ sudo nmcli connection up Hotspot              # back to hotspot
 - If `ssh` is "not recognized" in PowerShell, turn on the OpenSSH Client: Settings, System, Optional features, Add a feature, OpenSSH Client. Or use PuTTY.
 - Copying a command from this file and pasting into Windows Terminal: right-click pastes. Make sure a multi-line block pasted all at once did not get cut off.
 - If your PC is on a VPN, `.local` names and the `10.42.0.1` address may not reach the Pi. Turn the VPN off while setting up.
+
+## Connecting the Arduino
+
+The motors are driven by an Arduino Uno plugged into the Pi by USB. See `arduino-link.md` for uploading the sketch and connecting it.

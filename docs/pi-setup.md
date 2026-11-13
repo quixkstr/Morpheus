@@ -16,7 +16,7 @@ Written for the current Raspberry Pi OS (Bookworm or newer), which uses NetworkM
 
 ```bash
 sudo apt update && sudo apt full-upgrade -y
-sudo apt install -y git python3-flask python3-gpiozero
+sudo apt install -y git python3-flask python3-serial
 ```
 
 ## 3. Get the code
@@ -87,4 +87,4 @@ sudo nmcli connection up Hotspot                    # back to hotspot
 - One radio, one network: while the hotspot is on, the Pi has no WiFi internet.
 - iPhones sometimes leave a WiFi network that has no internet and fall back to cellular. If the app will not load during a demo, briefly switch cellular data off on the phone.
 - The server runs as root so it can use port 80 (so the address is just `http://10.42.0.1`) and the GPIO pins.
-- The motor code is all in `controller/motors.py`. The server only ever calls `dispense_one(slot)`.
+- The motors are driven by an Arduino Uno plugged into the Pi by USB. See `arduino-link.md` for uploading the sketch and connecting it.
